@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ledger — Study Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="ambient" aria-hidden="true">
+  <span>🔥</span>
+  <span>➡️</span>
+  <span>👑</span>
+  <span>⭐</span>
+  <span>✨</span>
+  <span>🎯</span>
+  <span>💫</span>
+</div>
+
+<div class="app">
+
+  <!-- Sidebar -->
+  <nav class="rail">
+    <div class="rail-brand">
+      <span class="brand-mark">🔥</span>
+      <span class="brand-name">Ledger</span>
+    </div>
+
+    <div class="rail-streak" id="streakDisplay">
+      <div class="flame-wrap" id="tallyMarks"></div>
+      <div class="streak-num"><span id="streakCount">0</span> day streak</div>
+    </div>
+
+    <ul class="rail-nav">
+      <li><button class="rail-btn active" data-view="dashboard"><span class="idx">🏠</span>Dashboard</button></li>
+      <li><button class="rail-btn" data-view="blocks"><span class="idx">📚</span>Study Blocks</button></li>
+      <li><button class="rail-btn" data-view="subjects"><span class="idx">🎯</span>Subjects</button></li>
+      <li><button class="rail-btn" data-view="progress"><span class="idx">📈</span>Practice Log</button></li>
+      <li><button class="rail-btn" data-view="insights"><span class="idx">💡</span>Insights</button></li>
+    </ul>
+
+    <div class="rail-foot">entries sync to your ledger automatically</div>
+  </nav>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <section class="view active" id="view-dashboard">
+      <header class="view-head">
+        <div>
+          <h1>Today's page</h1>
+          <p class="sub" id="todayDate">—</p>
+        </div>
+        <button class="btn btn-primary" data-open-modal="block">+ New study block</button>
+      </header>
+
+      <div class="grid grid-3 stat-row">
+        <div class="stat-card">
+          <span class="stat-label">Blocks today</span>
+          <span class="stat-num" id="statBlocksToday">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Hours logged today</span>
+          <span class="stat-num" id="statHoursToday">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Topics pending</span>
+          <span class="stat-num" id="statPending">0</span>
+        </div>
+      </div>
+
+      <div class="grid grid-2">
+        <div class="panel">
+          <h2 class="panel-title">Today's blocks</h2>
+          <div id="todayBlocksList" class="block-list"></div>
+        </div>
+        <div class="panel">
+          <h2 class="panel-title">Ledger says</h2>
+          <div id="dashInsight" class="insight-box">Log a few blocks to get your first read.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STUDY BLOCKS -->
+    <section class="view" id="view-blocks">
+      <header class="view-head">
+        <div>
+          <h1>Study blocks</h1>
+          <p class="sub">Every session, timestamped and reviewed.</p>
+        </div>
+        <button class="btn btn-primary" data-open-modal="block">+ New study block</button>
+      </header>
+      <div id="allBlocksList" class="block-list block-list-grouped"></div>
+    </section>
+
+    <!-- SUBJECTS -->
+    <section class="view" id="view-subjects">
+      <header class="view-head">
+        <div>
+          <h1>Subjects &amp; topics</h1>
+          <p class="sub">What's covered, what's still open.</p>
+        </div>
+        <button class="btn btn-primary" data-open-modal="subject">+ New subject</button>
+      </header>
+      <div id="subjectsList" class="subjects-grid"></div>
+    </section>
+
+    <!-- PRACTICE LOG / PROGRESS -->
+    <section class="view" id="view-progress">
+      <header class="view-head">
+        <div>
+          <h1>Practice log</h1>
+          <p class="sub">Questions attempted vs. correct, over time.</p>
+        </div>
+        <button class="btn btn-primary" data-open-modal="practice">+ Log practice session</button>
+      </header>
+
+      <div class="panel">
+        <div class="chart-toolbar">
+          <select id="chartSubjectFilter"><option value="all">All subjects</option></select>
+        </div>
+        <canvas id="progressChart" height="90"></canvas>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel-title">Sessions</h2>
+        <div id="practiceLogList" class="practice-list"></div>
+      </div>
+    </section>
+
+    <!-- INSIGHTS -->
+    <section class="view" id="view-insights">
+      <header class="view-head">
+        <div>
+          <h1>Insights</h1>
+          <p class="sub">A read on your consistency, based on your own ledger.</p>
+        </div>
+        <button class="btn btn-ghost" id="refreshInsights">Re-read the ledger</button>
+      </header>
+      <div id="insightsFull" class="insight-full"></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- MODAL: Study Block -->
+<div class="modal-overlay" id="modal-block">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="blockModalTitle">New study block</h3>
+      <button class="modal-close" data-close-modal>&times;</button>
+    </div>
+    <form id="blockForm">
+      <input type="hidden" id="blockId">
+      <div class="field-row">
+        <label>Date
+          <input type="date" id="blockDate" required>
+        </label>
+      </div>
+      <div class="field-row two">
+        <label>Start time
+          <input type="time" id="blockStart" required>
+        </label>
+        <label>End time
+          <input type="time" id="blockEnd" required>
+        </label>
+      </div>
+      <div class="field-row">
+        <label>Subject
+          <select id="blockSubject" required></select>
+        </label>
+        <button type="button" class="quick-add-link" data-quick-add-subject="block">+ Add a new subject</button>
+      </div>
+      <div class="field-row">
+        <label>Topic covered
+          <input type="text" id="blockTopic" placeholder="e.g. Rotational dynamics" required>
+        </label>
+      </div>
+      <div class="field-row">
+        <label>Key points / review / feedback
+          <textarea id="blockNotes" rows="4" placeholder="What clicked, what didn't, what to revisit"></textarea>
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-danger" id="deleteBlockBtn" style="display:none;">Delete</button>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-ghost" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save block</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Subject -->
+<div class="modal-overlay" id="modal-subject">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>New subject</h3>
+      <button class="modal-close" data-close-modal>&times;</button>
+    </div>
+    <form id="subjectForm">
+      <div class="field-row">
+        <label>Subject name
+          <input type="text" id="subjectName" placeholder="e.g. Physics" required>
+        </label>
+      </div>
+      <div class="modal-actions">
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-ghost" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn-primary">Add subject</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Topic -->
+<div class="modal-overlay" id="modal-topic">
+  <div class="modal">
+    <div class="modal-head">
+      <h3 id="topicModalTitle">New topic</h3>
+      <button class="modal-close" data-close-modal>&times;</button>
+    </div>
+    <form id="topicForm">
+      <input type="hidden" id="topicSubjectId">
+      <input type="hidden" id="topicId">
+      <div class="field-row">
+        <label>Topic name
+          <input type="text" id="topicName" placeholder="e.g. Thermodynamics — Laws" required>
+        </label>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-danger" id="deleteTopicBtn" style="display:none;">Delete</button>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-ghost" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save topic</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: Practice session -->
+<div class="modal-overlay" id="modal-practice">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Log practice session</h3>
+      <button class="modal-close" data-close-modal>&times;</button>
+    </div>
+    <form id="practiceForm">
+      <div class="field-row">
+        <label>Date
+          <input type="date" id="practiceDate" required>
+        </label>
+      </div>
+      <div class="field-row">
+        <label>Subject
+          <select id="practiceSubject" required></select>
+        </label>
+        <button type="button" class="quick-add-link" data-quick-add-subject="practice">+ Add a new subject</button>
+      </div>
+      <div class="field-row two">
+        <label>Questions attempted
+          <input type="number" id="practiceAttempted" min="0" required>
+        </label>
+        <label>Questions correct
+          <input type="number" id="practiceCorrect" min="0" required>
+        </label>
+      </div>
+      <div class="modal-actions">
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-ghost" data-close-modal>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save session</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
